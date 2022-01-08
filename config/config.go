@@ -17,7 +17,7 @@ type ServerConfig struct {
 	Port    string `mapstructure:"PORT"`
 }
 type Postegres struct {
-	DB_URL string
+	DB_URL string `mapstructure:"DB_URL"`
 }
 
 // LoadConfig maps all enviornment variable to Config Struct Using gomapstructure https://github.com/mitchellh/mapstructure
