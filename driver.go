@@ -14,9 +14,10 @@ func main() {
 		fmt.Println(err)
 	}
 	appLogger := log.NewApiLogger(cfg)
-
 	appLogger.InitLogger()
 	appLogger.Infof("App: %s Version: %s Status: %s", cfg.App, cfg.Version, cfg.Status)
+	_ = DbClient(cfg, appLogger)
+
 	s := server.NewServer(cfg, appLogger)
 	s.Run()
 

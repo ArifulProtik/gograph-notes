@@ -9,6 +9,7 @@ import "github.com/spf13/viper"
 
 type Config struct {
 	ServerConfig `mapstructure:",squash"`
+	Postegres    `mapstructure:",squash"`
 }
 type ServerConfig struct {
 	App     string `mapstructure:"APP"`
@@ -17,7 +18,11 @@ type ServerConfig struct {
 	Port    string `mapstructure:"PORT"`
 }
 type Postegres struct {
-	DB_URL string `mapstructure:"DB_URL"`
+	DB_HOST string `mapstructure:"DB_HOST"`
+	DB_PORT string `mapstructure:"DB_PORT"`
+	DB_NAME string `mapstructure:"DB_NAME"`
+	DB_USER string `mapstructure:"DB_USER"`
+	DB_PASS string `mapstructure:"DB_PASS"`
 }
 
 // LoadConfig maps all enviornment variable to Config Struct Using gomapstructure https://github.com/mitchellh/mapstructure
