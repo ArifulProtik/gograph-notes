@@ -2,30 +2,37 @@ package server
 
 import (
 	"github.com/ArifulProtik/gograph-notes/config"
+	"github.com/ArifulProtik/gograph-notes/ent"
 	"github.com/ArifulProtik/gograph-notes/log"
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server interface {
 	Run()
 }
-type fiberServer struct {
+type EchoServer struct {
 	config *config.Config
-	fiber  *fiber.App
+	echo   *echo.Echo
 	logger log.Logger
+	ent    *ent.Client
 }
 
-func NewServer(cfg *config.Config, logger log.Logger) Server {
-	return &fiberServer{
+func NewServer(cfg *config.Config, logger log.Logger, dbclient *ent.Client) Server {
+	return &EchoServer{
 		config: cfg,
-		fiber:  fiber.New(),
+		echo:   echo.New(),
 		logger: logger,
+		ent:    dbclient,
 	}
 }
 
 // Run Stats a Server and Handles all the service of a server
-func (s *fiberServer) Run() {
+func (s *EchoServer) Run() {
+
+	s.echo.Use(middleware.Recover())
+
 	s.RouteMapper()
 
-	s.logger.Fatal(s.fiber.Listen(s.config.Port))
+	s.logger.Fatal(s.echo.Start(s.config.Port))
 }
