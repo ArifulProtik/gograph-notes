@@ -18,7 +18,7 @@ func (User) Fields() []ent.Field {
 		field.String("name").NotEmpty(),
 		field.String("username").Unique().NotEmpty(),
 		field.String("email").Unique().NotEmpty(),
-		field.String("profile_pic"),
+		field.String("profile_pic").Optional(),
 		field.Text("password").NotEmpty(),
 	}
 }

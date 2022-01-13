@@ -14,7 +14,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "username", Type: field.TypeString, Unique: true},
 		{Name: "email", Type: field.TypeString, Unique: true},
-		{Name: "profile_pic", Type: field.TypeString},
+		{Name: "profile_pic", Type: field.TypeString, Nullable: true},
 		{Name: "password", Type: field.TypeString, Size: 2147483647},
 	}
 	// UsersTable holds the schema information for the "users" table.

@@ -23,3 +23,8 @@ type NewUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type UserRes struct {
+	User  *ent.User `json:"user"`
+	Error *string   `json:"error"`
+}

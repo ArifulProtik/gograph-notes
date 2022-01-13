@@ -50,6 +50,20 @@ func (uu *UserUpdate) SetProfilePic(s string) *UserUpdate {
 	return uu
 }
 
+// SetNillableProfilePic sets the "profile_pic" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableProfilePic(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetProfilePic(*s)
+	}
+	return uu
+}
+
+// ClearProfilePic clears the value of the "profile_pic" field.
+func (uu *UserUpdate) ClearProfilePic() *UserUpdate {
+	uu.mutation.ClearProfilePic()
+	return uu
+}
+
 // SetPassword sets the "password" field.
 func (uu *UserUpdate) SetPassword(s string) *UserUpdate {
 	uu.mutation.SetPassword(s)
@@ -192,6 +206,12 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: user.FieldProfilePic,
 		})
 	}
+	if uu.mutation.ProfilePicCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldProfilePic,
+		})
+	}
 	if value, ok := uu.mutation.Password(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -239,6 +259,20 @@ func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
 // SetProfilePic sets the "profile_pic" field.
 func (uuo *UserUpdateOne) SetProfilePic(s string) *UserUpdateOne {
 	uuo.mutation.SetProfilePic(s)
+	return uuo
+}
+
+// SetNillableProfilePic sets the "profile_pic" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableProfilePic(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetProfilePic(*s)
+	}
+	return uuo
+}
+
+// ClearProfilePic clears the value of the "profile_pic" field.
+func (uuo *UserUpdateOne) ClearProfilePic() *UserUpdateOne {
+	uuo.mutation.ClearProfilePic()
 	return uuo
 }
 
@@ -405,6 +439,12 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: user.FieldProfilePic,
+		})
+	}
+	if uuo.mutation.ProfilePicCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: user.FieldProfilePic,
 		})
 	}

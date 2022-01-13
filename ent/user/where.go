@@ -556,6 +556,20 @@ func ProfilePicHasSuffix(v string) predicate.User {
 	})
 }
 
+// ProfilePicIsNil applies the IsNil predicate on the "profile_pic" field.
+func ProfilePicIsNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldProfilePic)))
+	})
+}
+
+// ProfilePicNotNil applies the NotNil predicate on the "profile_pic" field.
+func ProfilePicNotNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldProfilePic)))
+	})
+}
+
 // ProfilePicEqualFold applies the EqualFold predicate on the "profile_pic" field.
 func ProfilePicEqualFold(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {

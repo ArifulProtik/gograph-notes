@@ -1,19 +1,22 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
+interface Node {
+  id: ID!
+}
 
-type User {
+type User implements Node{
   id: ID!
   name: String!
   username: String!
   email: String!
   profile_pic: String
-  created_at: String
 }
 type LoginRes {
   user: User!
   accestoken: String
   refreshToken: String
+}
+type UserRes {
+  user: User
+  error: String
 }
 
 type Query {
@@ -32,7 +35,7 @@ input Login {
 }
 
 type Mutation {
-  createUser(input: NewUser): User
+  createUser(input: NewUser): UserRes
   loginUser(input: Login): LoginRes
 }
 

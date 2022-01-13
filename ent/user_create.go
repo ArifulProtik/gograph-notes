@@ -44,6 +44,14 @@ func (uc *UserCreate) SetProfilePic(s string) *UserCreate {
 	return uc
 }
 
+// SetNillableProfilePic sets the "profile_pic" field if the given value is not nil.
+func (uc *UserCreate) SetNillableProfilePic(s *string) *UserCreate {
+	if s != nil {
+		uc.SetProfilePic(*s)
+	}
+	return uc
+}
+
 // SetPassword sets the "password" field.
 func (uc *UserCreate) SetPassword(s string) *UserCreate {
 	uc.mutation.SetPassword(s)
@@ -158,9 +166,6 @@ func (uc *UserCreate) check() error {
 		if err := user.EmailValidator(v); err != nil {
 			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "email": %w`, err)}
 		}
-	}
-	if _, ok := uc.mutation.ProfilePic(); !ok {
-		return &ValidationError{Name: "profile_pic", err: errors.New(`ent: missing required field "profile_pic"`)}
 	}
 	if _, ok := uc.mutation.Password(); !ok {
 		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "password"`)}

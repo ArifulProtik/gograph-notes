@@ -267,9 +267,22 @@ func (m *UserMutation) OldProfilePic(ctx context.Context) (v string, err error) 
 	return oldValue.ProfilePic, nil
 }
 
+// ClearProfilePic clears the value of the "profile_pic" field.
+func (m *UserMutation) ClearProfilePic() {
+	m.profile_pic = nil
+	m.clearedFields[user.FieldProfilePic] = struct{}{}
+}
+
+// ProfilePicCleared returns if the "profile_pic" field was cleared in this mutation.
+func (m *UserMutation) ProfilePicCleared() bool {
+	_, ok := m.clearedFields[user.FieldProfilePic]
+	return ok
+}
+
 // ResetProfilePic resets all changes to the "profile_pic" field.
 func (m *UserMutation) ResetProfilePic() {
 	m.profile_pic = nil
+	delete(m.clearedFields, user.FieldProfilePic)
 }
 
 // SetPassword sets the "password" field.
@@ -453,7 +466,11 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *UserMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(user.FieldProfilePic) {
+		fields = append(fields, user.FieldProfilePic)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -466,6 +483,11 @@ func (m *UserMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *UserMutation) ClearField(name string) error {
+	switch name {
+	case user.FieldProfilePic:
+		m.ClearProfilePic()
+		return nil
+	}
 	return fmt.Errorf("unknown User nullable field %s", name)
 }
 
