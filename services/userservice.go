@@ -9,6 +9,7 @@ import (
 	"github.com/ArifulProtik/gograph-notes/ent/user"
 	"github.com/ArifulProtik/gograph-notes/graph/model"
 	"github.com/ArifulProtik/gograph-notes/utils"
+	"github.com/google/uuid"
 )
 
 func CreateUser(client *ent.Client, input *model.NewUser) (*ent.User, error) {
@@ -38,11 +39,18 @@ func SigninUser(client *ent.Client, input *model.Login) (*model.LoginRes, error)
 	if err != nil {
 		return &model.LoginRes{}, errors.New("email or password incorrect")
 	}
-	ac_token, _ := auth.CreateAccessToken(user.ID)
-	rf_token, _ := auth.CreateRfreshToken(user.ID)
+	ac_token, _ := auth.GenAccessToken(context.Background(), user.ID)
+	rf_token, _ := auth.GenRfreshToken(context.Background(), user.ID)
 	return &model.LoginRes{
 		User:         user,
 		Accestoken:   &ac_token,
 		RefreshToken: &rf_token,
 	}, nil
+}
+func GetUserByid(client *ent.Client, ID uuid.UUID) (*ent.User, error) {
+	user, err := client.Debug().User.Query().Where(user.IDEQ(ID)).First(context.Background())
+	if err != nil {
+		return &ent.User{}, err
+	}
+	return user, nil
 }

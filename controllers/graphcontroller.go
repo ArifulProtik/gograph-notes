@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/ArifulProtik/gograph-notes/auth"
 	"github.com/ArifulProtik/gograph-notes/config"
 	"github.com/ArifulProtik/gograph-notes/ent"
 	"github.com/ArifulProtik/gograph-notes/graph"
@@ -17,25 +18,33 @@ type GraphController interface {
 }
 
 type graphController struct {
-	logger   log.Logger
-	dbclient *ent.Client
-	config   *config.Config
+	logger      log.Logger
+	dbclient    *ent.Client
+	config      *config.Config
+	echocontext echo.Context
 }
 
-func NewGraphController(logger log.Logger, dbclient *ent.Client, cfg *config.Config) GraphController {
+func NewGraphController(logger log.Logger, dbclient *ent.Client, cfg *config.Config, ctx echo.Context) GraphController {
 	return &graphController{
-		logger:   logger,
-		dbclient: dbclient,
-		config:   cfg,
+		logger:      logger,
+		dbclient:    dbclient,
+		config:      cfg,
+		echocontext: ctx,
 	}
 }
 
 func (s *graphController) Handlequery(c echo.Context) error {
-	srv := handler.NewDefaultServer(graph.NewSchema(s.logger, s.dbclient, s.config))
-	srv.ServeHTTP(c.Response(), c.Request())
+	cc := c.(*auth.CustomContext)
+	req := cc.Request()
+	res := cc.Response()
+	srv := handler.NewDefaultServer(graph.NewSchema(s.logger, s.dbclient, s.config, s.echocontext))
+	srv.ServeHTTP(res, req)
 	return nil
 }
 func (s *graphController) Handleplayground(c echo.Context) error {
-	playground.Handler("GraphQL", "/query").ServeHTTP(c.Response(), c.Request())
+	cc := c.(*auth.CustomContext)
+	req := cc.Request()
+	res := cc.Response()
+	playground.Handler("GraphQL", "/query").ServeHTTP(res, req)
 	return nil
 }

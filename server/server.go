@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/ArifulProtik/gograph-notes/auth"
 	"github.com/ArifulProtik/gograph-notes/config"
 	"github.com/ArifulProtik/gograph-notes/ent"
 	"github.com/ArifulProtik/gograph-notes/log"
@@ -29,6 +30,7 @@ func NewServer(cfg *config.Config, logger log.Logger, dbclient *ent.Client) Serv
 
 // Run Stats a Server and Handles all the service of a server
 func (s *EchoServer) Run() {
+	s.echo.Use(auth.JWTMiddleware())
 
 	s.echo.Use(middleware.Recover())
 

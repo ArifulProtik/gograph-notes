@@ -5,8 +5,9 @@ package graph
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
+	"github.com/ArifulProtik/gograph-notes/auth"
 	"github.com/ArifulProtik/gograph-notes/ent"
 	"github.com/ArifulProtik/gograph-notes/graph/generated"
 	"github.com/ArifulProtik/gograph-notes/graph/model"
@@ -36,7 +37,15 @@ func (r *mutationResolver) LoginUser(ctx context.Context, input *model.Login) (*
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	tokenData := auth.CtxValue(ctx)
+	if tokenData == nil {
+		return &ent.User{}, errors.New("Unauthorized")
+	}
+	user, err := services.GetUserByid(r.dbclient, tokenData.ID)
+	if err != nil {
+		return &ent.User{}, err
+	}
+	return user, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
