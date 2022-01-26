@@ -28,7 +28,11 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser)
 }
 
 func (r *mutationResolver) LoginUser(ctx context.Context, input *model.Login) (*model.LoginRes, error) {
-	panic(fmt.Errorf("not implemented"))
+	loginres, err := services.SigninUser(r.dbclient, input)
+	if err != nil {
+		return &model.LoginRes{}, err
+	}
+	return loginres, nil
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
