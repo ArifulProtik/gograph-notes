@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -13,12 +14,28 @@ type CustomContext struct {
 	ctx context.Context
 }
 
+func EchoContextFromContext(ctx context.Context) (*echo.Context, error) {
+	echoContext := ctx.Value("EchoContextKey")
+	if echoContext == nil {
+		err := fmt.Errorf("could not retrieve echo.Context")
+		return nil, err
+	}
+
+	ec, ok := echoContext.(*echo.Context)
+	if !ok {
+		err := fmt.Errorf("echo.Context has wrong type")
+		return nil, err
+	}
+	return ec, nil
+}
 func JWTMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			authheader := c.Request().Header.Get("Authorization")
 			if authheader == "" {
-				return next(c)
+				ctx := context.Background()
+				cc := &CustomContext{c, ctx}
+				return next(cc)
 			}
 
 			bearer := "Bearer "

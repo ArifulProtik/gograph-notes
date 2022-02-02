@@ -6,7 +6,6 @@ import (
 	"github.com/ArifulProtik/gograph-notes/ent"
 	"github.com/ArifulProtik/gograph-notes/log"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server interface {
@@ -32,7 +31,7 @@ func NewServer(cfg *config.Config, logger log.Logger, dbclient *ent.Client) Serv
 func (s *EchoServer) Run() {
 	s.echo.Use(auth.JWTMiddleware())
 
-	s.echo.Use(middleware.Recover())
+	// s.echo.Use(middleware.Recover())
 
 	s.RouteMapper()
 
