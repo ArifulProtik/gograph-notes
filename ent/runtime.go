@@ -3,6 +3,9 @@
 package ent
 
 import (
+	"time"
+
+	"github.com/ArifulProtik/gograph-notes/ent/notes"
 	"github.com/ArifulProtik/gograph-notes/ent/schema"
 	"github.com/ArifulProtik/gograph-notes/ent/user"
 	"github.com/google/uuid"
@@ -12,6 +15,28 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	notesFields := schema.Notes{}.Fields()
+	_ = notesFields
+	// notesDescTitle is the schema descriptor for title field.
+	notesDescTitle := notesFields[1].Descriptor()
+	// notes.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	notes.TitleValidator = notesDescTitle.Validators[0].(func(string) error)
+	// notesDescBody is the schema descriptor for body field.
+	notesDescBody := notesFields[2].Descriptor()
+	// notes.BodyValidator is a validator for the "body" field. It is called by the builders before save.
+	notes.BodyValidator = notesDescBody.Validators[0].(func(string) error)
+	// notesDescSlug is the schema descriptor for slug field.
+	notesDescSlug := notesFields[3].Descriptor()
+	// notes.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	notes.SlugValidator = notesDescSlug.Validators[0].(func(string) error)
+	// notesDescCreatedAt is the schema descriptor for created_at field.
+	notesDescCreatedAt := notesFields[5].Descriptor()
+	// notes.DefaultCreatedAt holds the default value on creation for the created_at field.
+	notes.DefaultCreatedAt = notesDescCreatedAt.Default.(func() time.Time)
+	// notesDescID is the schema descriptor for id field.
+	notesDescID := notesFields[0].Descriptor()
+	// notes.DefaultID holds the default value on creation for the id field.
+	notes.DefaultID = notesDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.

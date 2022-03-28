@@ -10,10 +10,12 @@ import (
 	"github.com/ArifulProtik/gograph-notes/ent/migrate"
 	"github.com/google/uuid"
 
+	"github.com/ArifulProtik/gograph-notes/ent/notes"
 	"github.com/ArifulProtik/gograph-notes/ent/user"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -21,6 +23,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Notes is the client for interacting with the Notes builders.
+	Notes *NotesClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -36,6 +40,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Notes = NewNotesClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -70,6 +75,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
+		Notes:  NewNotesClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -89,6 +95,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
 		config: cfg,
+		Notes:  NewNotesClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -96,7 +103,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		Notes.
 //		Query().
 //		Count(ctx)
 //
@@ -119,7 +126,114 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Notes.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// NotesClient is a client for the Notes schema.
+type NotesClient struct {
+	config
+}
+
+// NewNotesClient returns a client for the Notes from the given config.
+func NewNotesClient(c config) *NotesClient {
+	return &NotesClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `notes.Hooks(f(g(h())))`.
+func (c *NotesClient) Use(hooks ...Hook) {
+	c.hooks.Notes = append(c.hooks.Notes, hooks...)
+}
+
+// Create returns a create builder for Notes.
+func (c *NotesClient) Create() *NotesCreate {
+	mutation := newNotesMutation(c.config, OpCreate)
+	return &NotesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Notes entities.
+func (c *NotesClient) CreateBulk(builders ...*NotesCreate) *NotesCreateBulk {
+	return &NotesCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Notes.
+func (c *NotesClient) Update() *NotesUpdate {
+	mutation := newNotesMutation(c.config, OpUpdate)
+	return &NotesUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NotesClient) UpdateOne(n *Notes) *NotesUpdateOne {
+	mutation := newNotesMutation(c.config, OpUpdateOne, withNotes(n))
+	return &NotesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NotesClient) UpdateOneID(id uuid.UUID) *NotesUpdateOne {
+	mutation := newNotesMutation(c.config, OpUpdateOne, withNotesID(id))
+	return &NotesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Notes.
+func (c *NotesClient) Delete() *NotesDelete {
+	mutation := newNotesMutation(c.config, OpDelete)
+	return &NotesDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *NotesClient) DeleteOne(n *Notes) *NotesDeleteOne {
+	return c.DeleteOneID(n.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *NotesClient) DeleteOneID(id uuid.UUID) *NotesDeleteOne {
+	builder := c.Delete().Where(notes.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NotesDeleteOne{builder}
+}
+
+// Query returns a query builder for Notes.
+func (c *NotesClient) Query() *NotesQuery {
+	return &NotesQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Notes entity by its id.
+func (c *NotesClient) Get(ctx context.Context, id uuid.UUID) (*Notes, error) {
+	return c.Query().Where(notes.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NotesClient) GetX(ctx context.Context, id uuid.UUID) *Notes {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryAuthor queries the author edge of a Notes.
+func (c *NotesClient) QueryAuthor(n *Notes) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(notes.Table, notes.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, notes.AuthorTable, notes.AuthorColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NotesClient) Hooks() []Hook {
+	return c.hooks.Notes
 }
 
 // UserClient is a client for the User schema.
@@ -205,6 +319,22 @@ func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryNotes queries the notes edge of a User.
+func (c *UserClient) QueryNotes(u *User) *NotesQuery {
+	query := &NotesQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(notes.Table, notes.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.NotesTable, user.NotesColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

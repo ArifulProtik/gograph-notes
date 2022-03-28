@@ -28,7 +28,7 @@ func SigninUser(client *ent.Client, input *model.Login) (*model.LoginRes, error)
 	if input.Email == "" || input.Password == "" {
 		return &model.LoginRes{}, errors.New("email or password field empty")
 	}
-	user, err := client.Debug().User.Query().Where(user.EmailEQ(input.Email)).First(context.Background())
+	user, err := client.User.Query().Where(user.EmailEQ(input.Email)).First(context.Background())
 	if err != nil {
 		return &model.LoginRes{}, err
 	}
@@ -48,7 +48,7 @@ func SigninUser(client *ent.Client, input *model.Login) (*model.LoginRes, error)
 	}, nil
 }
 func GetUserByid(client *ent.Client, ID uuid.UUID) (*ent.User, error) {
-	user, err := client.Debug().User.Query().Where(user.IDEQ(ID)).First(context.Background())
+	user, err := client.User.Query().Where(user.IDEQ(ID)).First(context.Background())
 	if err != nil {
 		return &ent.User{}, err
 	}

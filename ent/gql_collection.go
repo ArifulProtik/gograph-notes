@@ -9,6 +9,26 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (n *NotesQuery) CollectFields(ctx context.Context, satisfies ...string) *NotesQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		n = n.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return n
+}
+
+func (n *NotesQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *NotesQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "author":
+			n = n.WithAuthor(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
+	return n
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) *UserQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		u = u.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)

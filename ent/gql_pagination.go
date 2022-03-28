@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/ArifulProtik/gograph-notes/ent/notes"
 	"github.com/ArifulProtik/gograph-notes/ent/user"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -232,6 +233,233 @@ const (
 	pageInfoField   = "pageInfo"
 	totalCountField = "totalCount"
 )
+
+// NotesEdge is the edge representation of Notes.
+type NotesEdge struct {
+	Node   *Notes `json:"node"`
+	Cursor Cursor `json:"cursor"`
+}
+
+// NotesConnection is the connection containing edges to Notes.
+type NotesConnection struct {
+	Edges      []*NotesEdge `json:"edges"`
+	PageInfo   PageInfo     `json:"pageInfo"`
+	TotalCount int          `json:"totalCount"`
+}
+
+// NotesPaginateOption enables pagination customization.
+type NotesPaginateOption func(*notesPager) error
+
+// WithNotesOrder configures pagination ordering.
+func WithNotesOrder(order *NotesOrder) NotesPaginateOption {
+	if order == nil {
+		order = DefaultNotesOrder
+	}
+	o := *order
+	return func(pager *notesPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultNotesOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithNotesFilter configures pagination filter.
+func WithNotesFilter(filter func(*NotesQuery) (*NotesQuery, error)) NotesPaginateOption {
+	return func(pager *notesPager) error {
+		if filter == nil {
+			return errors.New("NotesQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type notesPager struct {
+	order  *NotesOrder
+	filter func(*NotesQuery) (*NotesQuery, error)
+}
+
+func newNotesPager(opts []NotesPaginateOption) (*notesPager, error) {
+	pager := &notesPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultNotesOrder
+	}
+	return pager, nil
+}
+
+func (p *notesPager) applyFilter(query *NotesQuery) (*NotesQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *notesPager) toCursor(n *Notes) Cursor {
+	return p.order.Field.toCursor(n)
+}
+
+func (p *notesPager) applyCursors(query *NotesQuery, after, before *Cursor) *NotesQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultNotesOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *notesPager) applyOrder(query *NotesQuery, reverse bool) *NotesQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultNotesOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultNotesOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Notes.
+func (n *NotesQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...NotesPaginateOption,
+) (*NotesConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newNotesPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if n, err = pager.applyFilter(n); err != nil {
+		return nil, err
+	}
+
+	conn := &NotesConnection{Edges: []*NotesEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := n.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := n.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	n = pager.applyCursors(n, after, before)
+	n = pager.applyOrder(n, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		n = n.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		n = n.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := n.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *Notes
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Notes {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Notes {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*NotesEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &NotesEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// NotesOrderField defines the ordering field of Notes.
+type NotesOrderField struct {
+	field    string
+	toCursor func(*Notes) Cursor
+}
+
+// NotesOrder defines the ordering of Notes.
+type NotesOrder struct {
+	Direction OrderDirection   `json:"direction"`
+	Field     *NotesOrderField `json:"field"`
+}
+
+// DefaultNotesOrder is the default ordering of Notes.
+var DefaultNotesOrder = &NotesOrder{
+	Direction: OrderDirectionAsc,
+	Field: &NotesOrderField{
+		field: notes.FieldID,
+		toCursor: func(n *Notes) Cursor {
+			return Cursor{ID: n.ID}
+		},
+	},
+}
+
+// ToEdge converts Notes into NotesEdge.
+func (n *Notes) ToEdge(order *NotesOrder) *NotesEdge {
+	if order == nil {
+		order = DefaultNotesOrder
+	}
+	return &NotesEdge{
+		Node:   n,
+		Cursor: order.Field.toCursor(n),
+	}
+}
 
 // UserEdge is the edge representation of User.
 type UserEdge struct {

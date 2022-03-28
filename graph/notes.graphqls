@@ -1,0 +1,35 @@
+scalar Time
+scalar Cursor
+type Notes implements Node{
+  id: ID!
+  title: String!
+  body: String
+  slug: String
+  tags: [String!]
+  created_at: Time
+  author: User
+}
+type MuiltipleNotes {
+    notes: [Notes!]
+    Page: Int
+    Perpage: Int
+    lastpage: Int
+}
+type ResNotes{
+    Note: Notes
+    User: User
+}
+input NewNote{
+    title: String!
+    body: String!
+    tags: [String!]!
+}
+extend type Query {
+    mynotes(perpage: Int page: Int) : MuiltipleNotes
+    notes(perpage: Int page: Int): MuiltipleNotes
+    singlenote(slug: String!): Notes
+
+}
+extend type Mutation{
+    CreateNote(input: NewNote): ResNotes
+}

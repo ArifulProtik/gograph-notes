@@ -17,11 +17,29 @@ type LoginRes struct {
 	RefreshToken *string   `json:"refreshToken"`
 }
 
+type MuiltipleNotes struct {
+	Notes    []*ent.Notes `json:"notes"`
+	Page     *int         `json:"Page"`
+	Perpage  *int         `json:"Perpage"`
+	Lastpage *int         `json:"lastpage"`
+}
+
+type NewNote struct {
+	Title string   `json:"title"`
+	Body  string   `json:"body"`
+	Tags  []string `json:"tags"`
+}
+
 type NewUser struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type ResNotes struct {
+	Note *ent.Notes `json:"Note"`
+	User *ent.User  `json:"User"`
 }
 
 type UserRes struct {

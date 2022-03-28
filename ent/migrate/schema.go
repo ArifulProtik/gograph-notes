@@ -8,6 +8,30 @@ import (
 )
 
 var (
+	// NotesColumns holds the columns for the "notes" table.
+	NotesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "title", Type: field.TypeString},
+		{Name: "body", Type: field.TypeString, Size: 2147483647},
+		{Name: "slug", Type: field.TypeString, Unique: true},
+		{Name: "tags", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "user_notes", Type: field.TypeUUID, Nullable: true},
+	}
+	// NotesTable holds the schema information for the "notes" table.
+	NotesTable = &schema.Table{
+		Name:       "notes",
+		Columns:    NotesColumns,
+		PrimaryKey: []*schema.Column{NotesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "notes_users_notes",
+				Columns:    []*schema.Column{NotesColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -25,9 +49,11 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		NotesTable,
 		UsersTable,
 	}
 )
 
 func init() {
+	NotesTable.ForeignKeys[0].RefTable = UsersTable
 }

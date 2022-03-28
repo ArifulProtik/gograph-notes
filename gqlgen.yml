@@ -37,6 +37,8 @@ resolver:
 autobind:
   - github.com/ArifulProtik/gograph-notes/ent
   - github.com/ArifulProtik/gograph-notes/ent/user
+  - github.com/ArifulProtik/gograph-notes/ent/notes
+
 
 
 # This section declares type mapping between the GraphQL and go type systems

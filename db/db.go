@@ -7,6 +7,7 @@ import (
 
 	"github.com/ArifulProtik/gograph-notes/config"
 	"github.com/ArifulProtik/gograph-notes/ent"
+	"github.com/ArifulProtik/gograph-notes/ent/migrate"
 	"github.com/ArifulProtik/gograph-notes/log"
 	_ "github.com/lib/pq"
 )
@@ -21,7 +22,7 @@ func DbClient(cfg *config.Config, logger log.Logger) *ent.Client {
 	}
 	// defer client.Close()
 	logger.Info("Database Connected")
-	if err := client.Schema.Create(context.Background()); !errors.Is(err, nil) {
+	if err := client.Schema.Create(context.Background(), migrate.WithDropIndex(true), migrate.WithDropColumn(true)); !errors.Is(err, nil) {
 		logger.Fatalf("Error: failed creating schema resources %v\n", err)
 	}
 
