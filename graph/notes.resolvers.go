@@ -81,7 +81,7 @@ func (r *queryResolver) Notes(ctx context.Context, perpage *int, page *int) (*mo
 func (r *queryResolver) Singlenote(ctx context.Context, slug string) (*ent.Notes, error) {
 	note, err := services.Singlenote(r.dbclient, slug)
 	if err != nil {
-		return nil, graphql.ErrorOnPath(ctx, errors.New(err.Error()))
+		return nil, graphql.ErrorOnPath(ctx, errors.New("Not Found"))
 	}
 	return note, nil
 }
